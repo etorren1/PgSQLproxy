@@ -9,16 +9,23 @@
 #include <vector>
 
 #include "ConnectionManager.hpp"
+#include "QueryLogger.hpp"
 
 namespace prx {
 
-    #define STOP    0
-    #define WORKING 0b10
-    #define RESTART 0b01
-    #define BUF_SIZE 1024
-    //#define DEFAULT_CFG "proxy.conf"
+    /* Postgres constants */
+    #define PqMsg_Query         'Q'
+    #define PG_PROTOCOL(m,n)    (((m) << 16) | (n))
+    #define NEGOTIATE_SSL_CODE PG_PROTOCOL(1234,5679)
+    /* End */
 
-    class User;
+    #define BUF_SIZE 8192 // Max count of readed bytes per recv()
+
+    #define STOP        0x00
+    #define RESTART     0x01
+    #define WORKING     0x02
+
+    //#define DEFAULT_CFG "proxy.conf"
 
     struct DbConnectionInfo {
         std::string hostname;
@@ -47,9 +54,10 @@ namespace prx {
             int     readQuery(User & user, int fd);
             void    handleRequest(User & user);
             void    handleResponce(User & user);
-            void    disconnectUser(int fd);
+            void    disconnectUser(User& user);
 
             ConnectionMagager   cntManager_;
+            QueryLogger         log_;
 
             struct pollfd       poll_;
             int                 socket_;

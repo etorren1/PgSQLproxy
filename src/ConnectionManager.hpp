@@ -20,11 +20,13 @@ namespace prx {
             ConnectionMagager(ConnectionMagager& con) = delete;
             ConnectionMagager operator=(ConnectionMagager& con) = delete;
 
-            void addUser(int fd, const sockaddr_in& address);
-            void eraseUser(int fd);
-            User& getUser(int fd);
+            int     createDbSocket(); //! Create new database socket. Return socket ID or -1 if error occured.
+            bool    checkDbConnection();
+            void    addUser(int fd, const sockaddr_in& address);
+            void    eraseUser(User& user);
+            User&   getUser(int fd);
+            void    closeAll();
             std::vector<pollfd>& getFds();
-            void closeAll();
 
         private:
             std::vector<std::unique_ptr<User>> userPull_;

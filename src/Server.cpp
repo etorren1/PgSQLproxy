@@ -6,7 +6,7 @@
 
 namespace prx {
 
-    Server::Server()
+    Server::Server() : log_("myLog", "logs")
     {
         //_cfgpath.empty() ? cfgpath = DEFAULT_CFG : cfgpath = _cfgpath;
         dbInfo_.hostname = "127.0.0.1";
@@ -16,7 +16,6 @@ namespace prx {
 
     Server::~Server()
     {
-        std::cout << "Server destroyed.\n";
     }
 
     void    Server::init()
@@ -43,8 +42,13 @@ namespace prx {
             exit(EXIT_FAILURE);
         }
         /* start listening connections to socket */
-        if (listen(socket_, 0) < 0) { //count of listeners?
-            perror("listen");
+        if (listen(socket_, 0) < 0) {
+            perror("Socket listen failed");
+            exit(EXIT_FAILURE);
+        }
+
+        if (!cntManager_.checkDbConnection()) {
+            perror("Connection to database refused");
             exit(EXIT_FAILURE);
         }
 
@@ -84,15 +88,19 @@ namespace prx {
             if (text == "help") {
                 std::cout << "Type: \\stop for shutdown server\n";
                 std::cout << "      \\re for restarting server\n";
+                std::cout << "      \\nl for start new log file\n";
             }
-            if (text == "\\stop") {
+            else if (text == "\\stop") {
                 std::cout << "Shutdown server\n";
                 close(socket_);
                 cntManager_.closeAll();
                 status_ = STOP;
             }
-            if (text == "\\re") {
+            else if (text == "\\re") {
                 status_ = RESTART;
+            }
+            else if (text == "\\nl") {
+                log_.newLog();
             }
         }
     }
@@ -132,7 +140,7 @@ namespace prx {
                     size_t bytesRead = readQuery(user, sock.fd);
 
                     if (bytesRead == 0) {
-                        disconnectUser(sock.fd);
+                        disconnectUser(user);
                         continue;
                     }
                     if (user.isRequest(sock.fd)) {
@@ -148,7 +156,7 @@ namespace prx {
     }
 
     
-    static int bytesToInteger(char * buffer)
+    static int bytesToInteger(const char * buffer)
     {
         int size = static_cast<int>(static_cast<unsigned char>(buffer[0]) << 24 |
             static_cast<unsigned char>(buffer[1]) << 16 | 
@@ -164,47 +172,103 @@ namespace prx {
         int count;
         if ((count = recv(fd, buf, BUF_SIZE, 0)) > 0) {
             buf[count] = 0;
-            if (bytesRead == 0 && count > 0) {
-/*                 std::cout << "temp bytes: " << std::endl;
-                for (int i = 0; i < 4; i++) {
-                    printf("%d|", temp[i]);
-                } */
-                int size = bytesToInteger(&buf[1]);
-                std::cout << "Package size: " << size << std::endl;
-            }
             bytesRead += count;
             user.appendQuery(fd, buf, count);
-        }
-
-        if (bytesRead) {
-            const std::vector<char>* messPtr;
-            if (user.isRequest(fd)) {
-                std::cout << "Scoket " << fd << " request >>" << std::endl;
-                messPtr = &user.getRequestQuery();
-            }
-            else {
-                std::cout << "Scoket " << fd << " responce >>" << std::endl;
-                messPtr = &user.getResponceQuery();
-            }
-            std::cout << "Total bytes: " << bytesRead << std::endl;
-            for (int i = 0; i < bytesRead; i++) {
-                printf("%d|", (*messPtr)[i]);
-            }
-            printf("--------\n");
-            for (int i = 0; i < bytesRead; i++) {
-                if ((*messPtr)[i] > 31 && (*messPtr)[i] < 127)
-                    printf("%c", (*messPtr)[i]);
-                else
-                    printf(".");
-            }
-            printf("\n--------\n");
         }
         return (bytesRead);
     }
 
     void    Server::handleRequest(User & user)
     {
-        send(user.getDbFd(), user.getRequestQuery().data(), user.getRequestQuery().size(), 0);
+        auto& query = user.getRequestQuery();
+        int querySize = query.size();
+
+        const int MSG_TYPE_SIZE = 1; // query type size
+        const int DELIM_SIZE  = 1; // key-value delimeter size
+        const int BYTE_COUNT_SIZE = 4; // count bytes of query size
+
+        switch (user.stage_)
+        {
+        case eStage::FORWARDING: {
+            if (querySize > BYTE_COUNT_SIZE + MSG_TYPE_SIZE) {
+                int totalPackageSize = MSG_TYPE_SIZE + bytesToInteger(query.data() + MSG_TYPE_SIZE); // shifted by MSG_TYPE_SIZE because the message type is not included in the total length
+                if (totalPackageSize == querySize) {
+                    if (query[0] == PqMsg_Query) {
+                        std::string text = query.data() + MSG_TYPE_SIZE + BYTE_COUNT_SIZE;
+                        log_.writeLog(text, user.getAppInfo());
+                    }
+                }
+                else {
+                    return; // wait more bytes
+                }
+            }
+            else {
+                return; // wait more bytes
+            }
+            break;
+        }
+        case eStage::CHECK_APP: {
+            if (querySize > BYTE_COUNT_SIZE) {
+                int totalPackageSize = bytesToInteger(query.data());
+                if (totalPackageSize == querySize) {
+                    const char *it = query.data() + BYTE_COUNT_SIZE;
+                    if (it[0] == 0 && it[1] == 3 && it[2] == 0 && it[3] == 0) {
+                        std::cout << "Protocol 3.0 enabed\n";
+                    }
+                    it += 4;
+                    std::string login, app, dbname;
+                    while (*it != '\0') {
+                        std::string key = it;
+                        std::string value = it + key.size() + DELIM_SIZE;
+                        if (key == "user") {
+                            login = value;
+                        }
+                        else if (key == "database") {
+                            dbname = value;
+                        }
+                        else if (key == "application_name") {
+                            app = value;
+                        }
+                        it += key.size() + DELIM_SIZE + value.size() + DELIM_SIZE;
+                    }
+                    user.setAppInfo(app, login, dbname);
+                    user.stage_ = eStage::FORWARDING;
+                }
+                else {
+                    return; // wait more bytes
+                }
+                
+            }
+            else {
+                return; // wait more bytes
+            }
+            break;
+        }
+        case eStage::CHECK_PROTOCOL: {
+            if (querySize >= 8) {
+                /* parse first package */
+                if (NEGOTIATE_SSL_CODE == bytesToInteger(query.data() + BYTE_COUNT_SIZE)) {
+                    std::cout << "NEGOTIATE_SSL_CODE" <<std::endl;
+                    user.stage_ = eStage::CHECK_APP;
+                }
+                else {
+                    std::string message = "Unsupported protocol";
+                    send(user.getClientFd(), message.c_str(), message.size(), 0);
+                    std::cout << message << std::endl;
+                    disconnectUser(user);
+                    return;
+                }
+            }
+            else {
+                return; // wait more bytes
+            }
+            break;
+        }
+        default:
+            break;
+        }
+
+        send(user.getDbFd(), query.data(), querySize, 0);
         user.clearRequest();
     }
 
@@ -214,9 +278,9 @@ namespace prx {
         user.clearResponce();
     }
 
-    void    Server::disconnectUser(int fd)
+    void    Server::disconnectUser(User& user)
     {
-        cntManager_.eraseUser(fd);
+        cntManager_.eraseUser(user);
     }
 
 } // namespace prx

@@ -2,15 +2,13 @@
 
 namespace prx
 {
-    User::User(int userFd, int dbFd, char* ip)
-        : userFd_(userFd), dbFd_(dbFd), ipv4_(ip)
+    User::User(int userFd, int dbFd, char* ip, uint16_t port)
+        : userFd_(userFd), dbFd_(dbFd), ipv4_(ip), port_(port)
     {
     }
 
     User::~User()
     {
-        std::cout << "User destructor for User & DB";
-        std::cout << userFd_ << " " << dbFd_ << std::endl;
     }
 
     int User::getClientFd() const
@@ -28,40 +26,36 @@ namespace prx
         return fd == userFd_ ? true : false;
     }
 
-    const std::vector<char>& User::getResponceQuery()
+    const std::vector<char>& User::getResponceQuery() const
     {
         return responceQuery_;
     }
 
-    const std::vector<char>& User::getRequestQuery()
+    const std::vector<char>& User::getRequestQuery() const
     {
         return requestQuery_;
     }
 
-    /* void User::checkConnection()
+    void User::setAppInfo(const std::string& app, const std::string& login, const std::string& /*dbname*/)
     {
-        if (message.find_last_of("\n") != message.size() - 1) {
-            breakconnect_ = true;
+        appInfo_ = ipv4_ + ':' + std::to_string(port_);
+        if (!app.empty()) {
+            appInfo_ += " | " + app;
         }
-        else if (breakconnect_) {
-            breakconnect_ = false;
+        if (!login.empty()) {
+            appInfo_ += " | " + login;
         }
     }
- */
-    /* bool User::getBreakconnect() const
+
+    std::string User::getAppInfo() const
     {
-        return breakconnect_;
-    } */
+        return appInfo_;
+    }
 
     void User::appendQuery(int fd, char* buf, int buf_size)
     {
         bool isRequest = fd == userFd_;
         std::vector<char>* vectorPtr = isRequest ? &requestQuery_ : &responceQuery_;
-
-        /* if (vectorPtr->empty()) {
-            if (enabledProtocol_v3)
-        } */
-
         for (int i = 0; i < buf_size; i++) {
             vectorPtr->push_back(buf[i]);
         }
@@ -76,5 +70,5 @@ namespace prx
     {
         responceQuery_.clear();
     }
-    
+
 } // namespace prx

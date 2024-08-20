@@ -8,6 +8,42 @@ namespace prx {
     ConnectionMagager::ConnectionMagager() {}
     ConnectionMagager::~ConnectionMagager() {}
 
+    int ConnectionMagager::createDbSocket()
+    {
+        int sock;
+        /* socket initialization */
+        if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+            perror("Socket initialization failed");
+            return -1;
+        }
+        struct sockaddr_in  addr;
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(std::stoi("5432"));
+        if (inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr) < 0)
+        {
+            perror("Unable IP translation to special numeric format");
+            close(sock);
+            return -1;
+        }
+        /* binding IP and PORT to the database socket */
+        if (connect(sock, (sockaddr*)&addr, sizeof(addr)) != 0) {
+            perror("Connect to database failed");
+            close(sock);
+            return -1;
+        }
+        return sock;
+    }
+
+    bool ConnectionMagager::checkDbConnection()
+    {
+        int sock = createDbSocket();
+        if (createDbSocket() == -1) {
+            return false;
+        }
+        close(sock);
+        return true;
+    }
+
     void ConnectionMagager::addUser(int userSocket, const sockaddr_in& address)
     {
         pollfd pollFd;
@@ -18,29 +54,13 @@ namespace prx {
 
         std::cout << "New client on " << userSocket << " socket." << "\n";
 
-        int dbSocket;
-        /* socket initialization */
-        if ((dbSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-            perror("Socket initialization failed");
-        }
-        struct sockaddr_in  dbAddres;
-        dbAddres.sin_family = AF_INET;
-        dbAddres.sin_port = htons(std::stoi("5432"));
-        if (inet_pton(AF_INET, "127.0.0.1", &dbAddres.sin_addr) < 0)
-        {
-            perror("Unable IP translation to special numeric format");
-        }
-        /* binding IP and PORT to the server socket */
-        if (connect(dbSocket, (sockaddr*)&dbAddres, sizeof(dbAddres)) != 0) {
-            perror("Connect to database failed");
-        }
-
+        int dbSocket = createDbSocket();
         pollFd.fd = dbSocket;
         pollFd.events = POLLIN;
         pollFd.revents = 0;
         fdPull_.push_back(std::move(pollFd));
 
-        userPull_.push_back(std::make_unique<User>(userSocket, dbSocket, inet_ntoa(address.sin_addr)));
+        userPull_.push_back(std::make_unique<User>(userSocket, dbSocket, inet_ntoa(address.sin_addr), ntohs(address.sin_port)));
         std::cout << "Connect to database on " << dbSocket << " socket." << "\n";
         userTable_.emplace(userSocket, userPull_.back().get());
         userTable_.emplace(dbSocket, userPull_.back().get());
@@ -48,17 +68,16 @@ namespace prx {
 
     }
 
-    void ConnectionMagager::eraseUser(int fd)
+    void ConnectionMagager::eraseUser(User& user)
     {
-        User* user = userTable_[fd];
-        int clientFd = user->getClientFd();
-        int dbFd = user->getDbFd();
+        int clientFd = user.getClientFd();
+        int dbFd = user.getDbFd();
 
         auto userIt = std::find_if(userPull_.begin(), userPull_.end(), 
                                 [clientFd, dbFd](auto& u){ return u->getClientFd() == clientFd
                                                         && u->getDbFd() == dbFd; });
         if (userIt == userPull_.end()) {
-            std::cout << "ConnectionMagager::eraseUser| Unknown user fd = " << fd << std::endl;
+            std::cout << "ConnectionMagager::eraseUser| Unknown user" << std::endl;
             exit(1);
         }
         int count = 0;
@@ -81,7 +100,7 @@ namespace prx {
         close(clientFd);
         close(dbFd);
         userPull_.erase(userIt);
-        std::cout << clientFd << " gone away.n";
+        std::cout << clientFd << " gone away\n";
     }
 
     User& ConnectionMagager::getUser(int fd)

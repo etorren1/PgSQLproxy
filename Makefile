@@ -40,7 +40,7 @@ clean:
 
 fclean: clean
 	@rm -f $(NAME)
-	@rm -rf logs
+#	@rm -rf logs
 	@echo "$(RED)>>$(RESET) $(NAME) $(RED)deleted$(RESET)"
 
 re: fclean all
