@@ -151,13 +151,14 @@ namespace prx {
             for (pollfd& sock : fdPull) {
                 if (sock.revents & POLLIN) {
                     User& user = cntManager_.getUser(sock.fd);
+                    bool isRequest = user.isRequest(sock.fd);
                     size_t bytesRead = readQuery(user, sock.fd);
 
-                    if (bytesRead == 0) {
+                    if (bytesRead == 0 && isRequest) {
                         disconnectQueue.push_back(&user);
                         continue;
                     }
-                    if (user.isRequest(sock.fd)) {
+                    if (isRequest) {
                         handleRequest(user);
                     }
                     else {
