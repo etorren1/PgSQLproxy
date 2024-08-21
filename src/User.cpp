@@ -11,17 +11,17 @@ namespace prx
     {
     }
 
-    int User::getClientFd() const
+    int     User::getClientFd() const
     {
         return userFd_;
     }
 
-    int User::getDbFd() const
+    int     User::getDbFd() const
     {
         return dbFd_;
     }
 
-    bool User::isRequest(int fd) const
+    bool    User::isRequest(int fd) const
     {
         return fd == userFd_ ? true : false;
     }
@@ -36,7 +36,7 @@ namespace prx
         return requestQuery_;
     }
 
-    void User::setAppInfo(const std::string& app, const std::string& login, const std::string& /*dbname*/)
+    void    User::setAppInfo(const std::string& app, const std::string& login, const std::string& /*dbname*/)
     {
         appInfo_ = ipv4_ + ':' + std::to_string(port_);
         if (!app.empty()) {
@@ -47,12 +47,12 @@ namespace prx
         }
     }
 
-    std::string User::getAppInfo() const
+    std::string     User::getAppInfo() const
     {
         return appInfo_;
     }
 
-    void User::appendQuery(int fd, char* buf, int buf_size)
+    void    User::appendQuery(int fd, char* buf, int buf_size)
     {
         bool isRequest = fd == userFd_;
         std::vector<char>* vectorPtr = isRequest ? &requestQuery_ : &responceQuery_;
@@ -61,12 +61,12 @@ namespace prx
         }
     }
 
-    void User::clearRequest()
+    void    User::clearRequest()
     {
         requestQuery_.clear();
     }
 
-    void User::clearResponce()
+    void    User::clearResponce()
     {
         responceQuery_.clear();
     }

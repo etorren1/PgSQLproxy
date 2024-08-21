@@ -9,10 +9,15 @@
 
 namespace prx {
 
+    struct ConnectionInfo {
+        std::string hostname;
+        int port;
+    } ;
+
     class ConnectionMagager {
 
         public:
-            ConnectionMagager();
+            ConnectionMagager(const std::string& host, int port);
             ~ConnectionMagager();
             ConnectionMagager(ConnectionMagager& con) = delete;
             ConnectionMagager operator=(ConnectionMagager& con) = delete;
@@ -24,12 +29,16 @@ namespace prx {
             void    closeAll();
             std::vector<pollfd>& getFds();
 
+            void    logUserList() const;
+            size_t  getUsersCount() const;
+
         private:
             int     createDbSocket(); //! Create new database socket. Return socket ID or -1 if error occured.
 
-            std::vector<std::unique_ptr<User>> userPull_;   //! Pull of all users with two sockets
-            std::vector<struct pollfd> fdPull_;             //! Pull of all sockets for listening via poll
-            std::map<int, User*> userTable_;                //! Simple hash table for quic find user by socket 
+            ConnectionInfo                      dbInfo_;
+            std::vector<std::unique_ptr<User>>  userPull_;  //! Pull of all users with two sockets
+            std::vector<struct pollfd>          fdPull_;    //! Pull of all sockets for listening via poll
+            std::map<int, User*>                userTable_; //! Simple hash table for quic find user by socket 
     };
 
 } //namespace prx

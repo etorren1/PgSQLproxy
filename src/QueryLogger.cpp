@@ -14,7 +14,7 @@ namespace prx
         }
     }
 
-    void QueryLogger::writeLog(const std::string& text, const std::string& prefix)
+    void    QueryLogger::writeLog(const std::string& text, const std::string& prefix)
     {
         if (fd_ < 0) {
             openFile();
@@ -34,7 +34,7 @@ namespace prx
         }
     }
 
-    bool QueryLogger::newLog()
+    bool    QueryLogger::newLog()
     {
         if (fd_ > 0) {
             close(fd_);
@@ -42,7 +42,7 @@ namespace prx
         return openFile();
     }
 
-    std::string QueryLogger::getFilePostfix()
+    std::string     QueryLogger::getFilePostfix()
     {
         std::time_t t = std::time(0);
         std::tm* tm = std::localtime(&t);
@@ -52,7 +52,7 @@ namespace prx
         return date;
     }
 
-    std::string QueryLogger::getTime()
+    std::string     QueryLogger::getTime()
     {
         std::time_t t = std::time(0);
         std::tm* tm = std::localtime(&t);
@@ -62,7 +62,7 @@ namespace prx
         return time;
     }
 
-    int QueryLogger::openFile()
+    int     QueryLogger::openFile()
     {
         std::string fullName;
         if (!filePath_.empty()) {

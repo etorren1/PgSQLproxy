@@ -6,10 +6,16 @@
 
 namespace prx {
 
-    ConnectionMagager::ConnectionMagager() {}
-    ConnectionMagager::~ConnectionMagager() {}
+    ConnectionMagager::ConnectionMagager(const std::string& host, int port) 
+        : dbInfo_({host, port})
+    {
+    }
 
-    int ConnectionMagager::createDbSocket()
+    ConnectionMagager::~ConnectionMagager()
+    {
+    }
+
+    int     ConnectionMagager::createDbSocket()
     {
         int sock;
         /* Socket initialization */
@@ -18,8 +24,8 @@ namespace prx {
         }
         struct sockaddr_in  addr;
         addr.sin_family = AF_INET;
-        addr.sin_port = htons(std::stoi("5432"));
-        if (inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr) < 0)
+        addr.sin_port = htons(dbInfo_.port);
+        if (inet_pton(AF_INET, dbInfo_.hostname.c_str(), &addr.sin_addr) < 0)
         {
             close(sock);
             return ERROR;
@@ -32,7 +38,7 @@ namespace prx {
         return sock;
     }
 
-    bool ConnectionMagager::checkDbConnection()
+    bool    ConnectionMagager::checkDbConnection()
     {
         int sock = createDbSocket();
         if (sock == UNKNOWN_FD) {
@@ -41,7 +47,7 @@ namespace prx {
         return true;
     }
 
-    void ConnectionMagager::addUser(int userSocket, const sockaddr_in& address)
+    void    ConnectionMagager::addUser(int userSocket, const sockaddr_in& address)
     {
         int dbSocket = createDbSocket();
         if (dbSocket == UNKNOWN_FD) {
@@ -71,7 +77,7 @@ namespace prx {
         fcntl(dbSocket, F_SETFL, O_NONBLOCK);
     }
 
-    void ConnectionMagager::removeUser(User& user)
+    void    ConnectionMagager::removeUser(User& user)
     {
         int clientFd = user.getClientFd();
         int dbFd = user.getDbFd();
@@ -104,7 +110,7 @@ namespace prx {
         userPull_.erase(userIt);
     }
 
-    User& ConnectionMagager::getUser(int fd)
+    User&   ConnectionMagager::getUser(int fd)
     {
         auto it = userTable_.find(fd);
         if (it == userTable_.end()) {
@@ -118,11 +124,25 @@ namespace prx {
         return fdPull_;
     }
 
-    void ConnectionMagager::closeAll()
+    void    ConnectionMagager::closeAll()
     {
         for (auto elem : fdPull_) {
             close(elem.fd);
         }
     }
 
+    void    ConnectionMagager::logUserList() const
+    {
+        for (auto& user : userPull_) {
+            std::cout << "   " << user->getAppInfo() 
+             << " | " << user->getClientFd()
+             << " | " << user->getDbFd() 
+             << std::endl;
+        }
+    }
+
+    size_t  ConnectionMagager::getUsersCount() const
+    {
+        return userPull_.size();
+    }
 }

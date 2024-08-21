@@ -12,21 +12,18 @@
 
 namespace prx {
 
-    //#define DEFAULT_CFG "proxy.conf"
-
-    struct DbConnectionInfo {
-        std::string hostname;
-        int port;
-    } ;
-
     class Server {
         
         public:
 
-            Server( void );
+            Server(const std::string& srvhost, int srvport,
+                   const std::string& dbhost, int dbport,
+                   const std::string& logname, const std::string& logpath);
             ~Server();
 
-            Server  operator=(const Server & src) = delete; 
+            Server( void ) = delete;
+            Server(Server& s) = delete;
+            Server  operator=(const Server & src) = delete;
 
             //void    config( const int & fd );
             void    run( void );
@@ -43,13 +40,14 @@ namespace prx {
             void    handleRequest(User & user);
             void    handleResponce(User & user);
 
-            ConnectionMagager   cntManager_;
             QueryLogger         log_;
+            ConnectionMagager   cntManager_;
 
             struct pollfd       poll_;
             int                 socket_;
             int                 status_;
-            DbConnectionInfo    dbInfo_;
+            ConnectionInfo      srvInfo_;
+
     };
 
 } //namespace prx

@@ -6,11 +6,13 @@
 
 namespace prx {
 
-    Server::Server() : log_("Proxy", "logs")
+    Server::Server(const std::string& srvhost, int srvport,
+                const std::string& dbhost, int dbport,
+                const std::string& logname, const std::string& logpath)
+        : log_(logname, logpath)
+        , cntManager_(dbhost, dbport)
+        , srvInfo_({srvhost, srvport})
     {
-        //_cfgpath.empty() ? cfgpath = DEFAULT_CFG : cfgpath = _cfgpath;
-        dbInfo_.hostname = "127.0.0.1";
-        dbInfo_.port = 5432;
         init();
     }
 
@@ -28,8 +30,8 @@ namespace prx {
         }
         struct sockaddr_in  address;
         address.sin_family = AF_INET;
-        address.sin_port = htons(std::stoi("4242"));
-        if (inet_pton(AF_INET, "127.0.0.1", &address.sin_addr) < 0)
+        address.sin_port = htons(srvInfo_.port);
+        if (inet_pton(AF_INET, srvInfo_.hostname.c_str(), &address.sin_addr) < 0)
         {
             perror("Unable IP translation to special numeric format");
             close(socket_);
@@ -65,7 +67,7 @@ namespace prx {
 
     void    Server::run()
     {
-        std::cout << "Server is now running. Type \"help\" for help.\n";
+        std::cout << "Server is now running at " << srvInfo_.hostname << ":" << srvInfo_.port << ".\nType \"help\" for help.\n";
         status_ = WORKING;
         while(status_ & WORKING) {
             try {
@@ -98,6 +100,7 @@ namespace prx {
                 std::cout << "Type: \\stop for shutdown server\n";
                 std::cout << "      \\re for restarting server\n";
                 std::cout << "      \\nl for start new log file\n";
+                std::cout << "      \\ul for showing user list\n";
             }
             else if (text == "\\stop") {
                 std::cout << "Shutdown server\n";
@@ -112,6 +115,16 @@ namespace prx {
             else if (text == "\\nl") {
                 if (log_.newLog())
                     std::cout << "New log file created\n";
+            }
+            else if (text == "\\ul") {
+                size_t count = cntManager_.getUsersCount();
+                if (count == 0) {
+                    std::cout << "Nobody *song of crickets*\n";
+                }
+                else {
+                    std::cout << "Total users count: " << count << "\nList (hostname, application, login, usersocket, dbsocket):\n";
+                    cntManager_.logUserList();
+                }
             }
         }
     }
@@ -217,6 +230,7 @@ namespace prx {
         }
         case eStage::CHECK_APP: {
             if (querySize >= BYTE_COUNT_SIZE) {
+                /* Parse second package */
                 int totalPackageSize = utils::bytesToInteger(query.data());
                 if (totalPackageSize == querySize) {
                     const char *it = query.data() + BYTE_COUNT_SIZE;

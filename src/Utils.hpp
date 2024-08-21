@@ -25,11 +25,20 @@ namespace prx
     static const int BUF_SIZE   = 65536; // Max count of readed bytes per recv()
 } // namespace prx
 
+struct config {
+    std::string srvhost = "127.0.0.1";
+    std::string srvport = "4242";
+    std::string dbhost = "127.0.0.1";
+    std::string dbport = "5432";
+    std::string logpath = "logs";
+    std::string logname = "Proxy";
+};
 
 namespace utils
 {
     void	rec_mkdir(std::string path);
     int     bytesToInteger(const char * buffer);
+    std::string	    trim(std::string str, std::string cut);
 
 } // namespace utils
 
