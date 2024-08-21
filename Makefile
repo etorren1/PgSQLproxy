@@ -24,6 +24,7 @@ $(NAME): $(MKDIR) $(OBJ) $(HEADER)
 	@$(CC) $(FLAG) $(OBJ) -o $(NAME)
 	@printf "$(ERASE)\r"
 	@echo "$(RED)>>$(RESET) $(COUNT_FILES) files $(GREEN)compiled$(RESET)"
+	@echo "Type './$(NAME) --help' for more infomation"
 
 $(MKDIR):
 	@mkdir -p $@

@@ -132,7 +132,7 @@ namespace prx {
     void    Server::connectClient()
     {
         /* Listen for incoming connections via poll */
-        int ret = poll(&poll_, 1, 100);
+        int ret = poll(&poll_, 1, 0);
         if (ret > 0) {
             if (poll_.revents & POLLIN) {
                 int clientSocket;

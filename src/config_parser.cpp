@@ -61,7 +61,7 @@ int     parse_args(int argc, char **argv, struct config* cfg)
                     return (EXIT_SUCCESS);
                 }
                 else {
-                    std::cout << argv[0] << ": Unable to get flag parameter '" << argv[i] << "'\nTry './" << argv[0] << " --help' for more information\n";
+                    std::cout << argv[0] << ": Unable to get flag parameter '" << argv[i] << "'\nTry '" << argv[0] << " --help' for more information\n";
                     return (EXIT_FAILURE);
                 }
             }
@@ -69,7 +69,7 @@ int     parse_args(int argc, char **argv, struct config* cfg)
                 if (i + 1 != argc && argv[i + 1][0] != '-') 
                     cfg->srvhost = argv[++i];
                 else {
-                    std::cout << argv[0] << ": Unable to get flag parameter '" << argv[i] << "'\nTry './proxy --help' for more information\n";
+                    std::cout << argv[0] << ": Unable to get flag parameter '" << argv[i] << "'\nTry '" << argv[0] << " for more information\n";
                     return (EXIT_FAILURE);
                 }
             }
@@ -77,7 +77,7 @@ int     parse_args(int argc, char **argv, struct config* cfg)
                 if (i + 1 != argc && argv[i + 1][0] != '-')
                     cfg->srvport = argv[++i];
                 else {
-                    std::cout << argv[0] << ": Unable to get flag parameter '" << argv[i] << "'\nTry './proxy --help' for more information\n";
+                    std::cout << argv[0] << ": Unable to get flag parameter '" << argv[i] << "'\nTry '" << argv[0] << " for more information\n";
                     return (EXIT_FAILURE);
                 }
             }
@@ -85,7 +85,7 @@ int     parse_args(int argc, char **argv, struct config* cfg)
                 if (i + 1 != argc && argv[i + 1][0] != '-')
                     cfg->dbhost = argv[++i];
                 else {
-                    std::cout << argv[0] << ": Unable to get flag parameter '" << argv[i] << "'\nTry './proxy --help' for more information\n";
+                    std::cout << argv[0] << ": Unable to get flag parameter '" << argv[i] << "'\nTry '" << argv[0] << " for more information\n";
                     return (EXIT_FAILURE);
                 }
             }
@@ -93,7 +93,7 @@ int     parse_args(int argc, char **argv, struct config* cfg)
                 if (i + 1 != argc && argv[i + 1][0] != '-')
                     cfg->dbport = argv[++i];
                 else {
-                    std::cout << argv[0] << ": Unable to get flag parameter '" << argv[i] << "'\nTry './proxy --help' for more information\n";
+                    std::cout << argv[0] << ": Unable to get flag parameter '" << argv[i] << "'\nTry '" << argv[0] << " for more information\n";
                     return (EXIT_FAILURE);
                 }
             }
