@@ -19,24 +19,27 @@ namespace prx
         if (fd_ < 0) {
             openFile();
         }
-        std::string time = getTime();
-        write(fd_, time.c_str(), time.size());
-        if (!prefix.empty()) {
-            write(fd_, " | ", 3);
-            write(fd_, prefix.c_str(), prefix.size());
+        if (fd_) {
+            std::string time = getTime();
+            write(fd_, time.c_str(), time.size());
+            if (!prefix.empty()) {
+                write(fd_, " | ", 3);
+                write(fd_, prefix.c_str(), prefix.size());
+            }
+            write(fd_, " > ", 3);
+            write(fd_, text.c_str(), text.size());
+            if (text.back() != '\n') {
+                write(fd_, "\n", 1);
+            }
         }
-        write(fd_, " > ", 3);
-        write(fd_, text.c_str(), text.size());
-        if (text.back() != '\n')
-            write(fd_, "\n", 1);
     }
 
-    void QueryLogger::newLog()
+    bool QueryLogger::newLog()
     {
         if (fd_ > 0) {
             close(fd_);
         }
-        openFile();
+        return openFile();
     }
 
     std::string QueryLogger::getFilePostfix()
@@ -53,12 +56,13 @@ namespace prx
     {
         std::time_t t = std::time(0);
         std::tm* tm = std::localtime(&t);
-        char time[8];
+        char time[9];
+        time[8] = '\0';
         sprintf(time, "%0*d:%0*d:%0*d", 2, tm->tm_hour, 2, tm->tm_min, 2, tm->tm_sec);
         return time;
     }
 
-    void QueryLogger::openFile()
+    int QueryLogger::openFile()
     {
         std::string fullName;
         if (!filePath_.empty()) {
@@ -74,10 +78,11 @@ namespace prx
             }
             fd_ = open(fullName.c_str(), flags, 0644);
             if (fd_ < 0) {
-                std::cerr << "Error: can not open or create log file\n";
-                return ;
+                std::cout << "Could not open or create log file\n";
+                return UNKNOWN_FD;
             }
         }
+        return fd_;
     }
 
 } // namespace prx

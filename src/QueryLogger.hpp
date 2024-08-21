@@ -4,7 +4,6 @@
 #include "Utils.hpp"
 
 #include <ctime>
-#include <iostream>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -17,16 +16,16 @@ namespace prx
             ~QueryLogger();
 
             void    writeLog(const std::string& message, const std::string& prefix = "");
-            void    newLog();
+            bool    newLog(); //! Create new log file. Return false if error occured
 
         private:
             std::string getFilePostfix();
             std::string getTime();
-            void        openFile();
+            int         openFile();
 
-            int fd_ = -1;
-            std::string filePath_;
+            int fd_ = UNKNOWN_FD;
             std::string fileName_;
+            std::string filePath_;
     };
 
 } // namespace prx

@@ -1,6 +1,6 @@
 #include "Server.hpp"
 
-int     main(int argc, char **argv)
+int     main(/* int argc, char **argv */)
 {
 /*     int fd;
     std::string cfgpath;

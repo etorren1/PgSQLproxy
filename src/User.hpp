@@ -1,9 +1,7 @@
 #ifndef User_hpp
 #define User_hpp
 
-#include <string>
-#include <iostream>
-#include <vector>
+#include "Utils.hpp"
 
 namespace prx {
 
@@ -21,6 +19,7 @@ namespace prx {
 
             int getClientFd() const;
             int getDbFd() const;
+            void setDbFd(int fd);
             void appendQuery(int fd, char* buf, int buf_size);
             bool isRequest(int fd) const;
             const std::vector<char>& getResponceQuery() const;
@@ -35,10 +34,10 @@ namespace prx {
 
         private:
         
-            int dbFd_ = -1;
-            int userFd_ = -1;
-            int port_ = 0;
+            int userFd_ = UNKNOWN_FD;
+            int dbFd_ = UNKNOWN_FD;
             std::string ipv4_;
+            int port_ = 0;
             std::string appInfo_;
             std::vector<char> responceQuery_;
             std::vector<char> requestQuery_;

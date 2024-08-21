@@ -6,9 +6,7 @@ HEADER = $(wildcard src/*.hpp)
 
 COUNT_FILES = $(words $(SRC))
 
-FLAG = #-Wall -Werror -Wextra
-
-LIB = -I/usr/local/mysql/include -L/usr/local/mysql/lib -lmysqlclient
+FLAG = -Wall -Werror -Wextra
 
 OBJ = $(SRC:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 
@@ -18,12 +16,12 @@ SRC_DIR = src
 
 MKDIR = $(sort $(dir $(OBJ)))
 
-CC = clang++
+CC = g++ -g
 
 all: $(NAME)
 
 $(NAME): $(MKDIR) $(OBJ) $(HEADER)
-	@$(CC) $(FLAG) $(OBJ) -o $(NAME) $(LIB)
+	@$(CC) $(FLAG) $(OBJ) -o $(NAME)
 	@printf "$(ERASE)\r"
 	@echo "$(RED)>>$(RESET) $(COUNT_FILES) files $(GREEN)compiled$(RESET)"
 
@@ -40,7 +38,7 @@ clean:
 
 fclean: clean
 	@rm -f $(NAME)
-#	@rm -rf logs
+	@rm -rf logs
 	@echo "$(RED)>>$(RESET) $(NAME) $(RED)deleted$(RESET)"
 
 re: fclean all
